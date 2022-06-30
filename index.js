@@ -146,6 +146,26 @@ app.post("/create-payment-intent", async (req, res) => {
   }
 });
 
+// TODO: Create payment intent w/ customer and payment method
+app.post("/payment-method-customer-method", async (req, res) => {
+  const { paymentMethod, stripeCustomerId } = req.body;
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: 1200,
+      currency: "gbp",
+      customer: stripeCustomerId,
+      payment_method: paymentMethod,
+      off_session: true,
+      confirm: true,
+    });
+
+    res.json(paymentIntent);
+  } catch (error) {
+    res.json(error);
+  }
+});
+
 app.get("/tokens", async (req, res) => {
   // console.log(req.params);
   console.log(req.query);
@@ -159,7 +179,9 @@ app.get("/redirect", (req, res) => {
 
 // STRIPE STUFF
 
-app.post("/create-connected-account", async (req, res) => {
+app.post("/connected-account", async (req, res) => {
+  const { email } = req.body;
+
   try {
     const account = await stripe.accounts.create({
       type: "express",
@@ -172,13 +194,12 @@ app.post("/create-connected-account", async (req, res) => {
       business_profile: {
         url: "rktutors.co.uk",
         mcc: 8299,
-        support_email: "pleasework@pleasework.com",
       },
-      email: "test@gmail.com",
+      // email: "test@gmail.com",
       individual: {
-        email: "test@gmail.com",
-        first_name: "eren",
-        last_name: "yeager",
+        email,
+        // first_name: "eren",
+        // last_name: "yeager",
       },
     });
 
@@ -187,6 +208,7 @@ app.post("/create-connected-account", async (req, res) => {
     res.json(account);
   } catch (error) {
     console.log(error);
+    res.json(error);
   }
 });
 
@@ -293,6 +315,74 @@ app.post("/delete-all-accounts", async (req, res) => {
       console.log("deleted account...");
     }
     res.json({ success: true });
+  } catch (error) {
+    res.json(error);
+  }
+});
+
+// TODO: Create Stripe Customer
+app.post("/stripe-customer", async (req, res) => {
+  const { name, email } = req.body;
+
+  try {
+    // res.send("tyring");
+    const customer = await stripe.customers.create({
+      name,
+      email,
+    });
+    res.json(customer);
+  } catch (error) {
+    console.log(error);
+    res.json(error);
+  }
+});
+
+// TODO: Create Set Up Intent
+app.post("/setup-intent", async (req, res) => {
+  const { customerId } = req.body;
+
+  try {
+    const setupIntent = await stripe.setupIntents.create({
+      payment_method_types: ["card"],
+      customer: customerId,
+    });
+
+    // returns a client secret
+    res.json(setupIntent);
+  } catch (error) {
+    res.json(error);
+  }
+});
+
+// TODO: List payment methods
+app.post("/payment-methods", async (req, res) => {
+  // customer is customer id
+  const { customer } = req.body;
+  console.log("received");
+  console.log(customer);
+
+  try {
+    const paymentMethods = await stripe.paymentMethods.list({
+      customer,
+      type: "card",
+    });
+
+    res.json(paymentMethods);
+  } catch (error) {
+    console.log(error);
+    res.json(error);
+  }
+});
+
+// TODO: Detach payment method from customer
+app.post("/detach-payment-method", async (req, res) => {
+  const { paymentMethodId } = req.body;
+
+  try {
+    const removedPaymentMethod = await stripe.paymentMethods.detach(
+      paymentMethodId
+    );
+    res.json(removedPaymentMethod);
   } catch (error) {
     res.json(error);
   }
